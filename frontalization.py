@@ -2,6 +2,7 @@ import os
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
+from rdp import rdp
 
 from tqdm.notebook import tqdm
 
@@ -80,19 +81,25 @@ def order_corners(corners):
     """
     # BEGIN YOUR CODE
 
-    # top_left = None # YOUR CODE
-    # top_right = None # YOUR CODE
-    # bottom_right = None # YOUR CODE
-    # bottom_left = None # YOUR CODE
-    
+    corners = corners[corners[:, 0].argsort()]
+    tc = corners[0:2]
+    bc = corners[2:4]
+    tc = tc[tc[:, 1].argsort()]
+    bc = bc[bc[:, 1].argsort()]
+
+    top_left = tc[0]
+    top_right = tc[1]
+    bottom_right = bc[1]
+    bottom_left = bc[0]
+
     # END YOUR CODE
 
-    # ordered_corners = np.array([top_left, top_right, bottom_right, bottom_left])
+    ordered_corners = np.array([top_left, top_right, bottom_right, bottom_left])
 
-    return corners # ordered_corners
+    return ordered_corners
 
 
-def find_corners(contour, accuracy=0.1):
+def find_corners(contour, accuracy=0.101):
     """
     Args:
         contour (np.array): an array of points (vertices) of the contour of shape [N, 1, 2]
@@ -101,17 +108,16 @@ def find_corners(contour, accuracy=0.1):
         ordered_corners (np.array): an array of corner points (corners) of quadrilateral approximation of contour of shape [4, 2]
                                     in order [top left, top right, bottom right, bottom left]
     """
-    # BEGIN YOUR CODE
 
-    print(contour)
-
-    x,y,w,h = cv2.boundingRect(contour)
-    print(cv2.isContourConvex(contour))
-
-    print(x,y)
-    corners = np.array([[]]) # cv2.goodFeaturesToTrack(contour, 4, accuracy, 50)
-    
-    # END YOUR CODE
+    # maybe this:  https://www.scaler.com/topics/contour-analysis-opencv/    
+    print(len(contour))
+    accuracy = 0.01*cv2.arcLength(contour, True)
+    corners = cv2.approxPolyDP(contour, accuracy, True)
+    print(corners.shape)
+    corners = np.array([corners[0][0],
+                        corners[1][0],
+                        corners[2][0],
+                        corners[3][0]])
 
     # to avoid errors
     if len(corners) != 4:
