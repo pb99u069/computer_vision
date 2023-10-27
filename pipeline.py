@@ -14,8 +14,7 @@ from frontalization import find_corners
 def get_test_pipeline():
     # BEGIN YOUR CODE
 
-    pipeline = None # YOUR CODE
-    
+    pipeline = Pipeline(functions=[rescale_image, find_edges, highlight_edges, find_contours, get_max_contour, find_corners])
     # END YOUR CODE
     
     return pipeline

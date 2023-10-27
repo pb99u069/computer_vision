@@ -3,13 +3,15 @@ import numpy as np
 import cv2
 import matplotlib.pyplot as plt
 
+from skimage.feature import match_template
+
 from tqdm.notebook import tqdm
 
 from utils import read_image, show_image
 from frontalization import rescale_image, frontalize_image
 
 # BEGIN YOUR IMPORTS
-
+from skimage import img_as_ubyte
 # END YOUR IMPORTS
 
 NUM_CELLS = 9
@@ -29,8 +31,9 @@ def resize_image(image, size):
     """
     # BEGIN YOUR CODE
 
-    resized_image = # YOUR CODE
+    resized_image = cv2.resize(image, size)
     
+    resized_image = img_as_ubyte(resized_image)
     # END YOUR CODE
 
     return resized_image
@@ -49,7 +52,8 @@ def binarize(image, **binarization_kwargs):
     """
     # BEGIN YOUR CODE
 
-    binarized_image = # YOUR CODE
+    ret, thresh = cv2.threshold(image, 127, 255, cv2.THRESH_BINARY)
+    binarized_image = thresh
     
     # END YOUR CODE
     
@@ -79,16 +83,16 @@ def get_sudoku_cells(frontalized_image, crop_factor=0.8, binarization_kwargs={'b
     """
     # BEGIN YOUR CODE
 
-    resized_image = # YOUR CODE
-    
-    binarized_image = # YOUR CODE
+    resized_image = resize_image(frontalized_image, size=SUDOKU_SIZE) # YOUR CODE
+    show_image(resized_image)
+    binarized_image = binarize(resized_image) # YOUR CODE
+    # show_image(binarized_image[0:CELL_SIZE[0], 0:CELL_SIZE[0]])
     
     sudoku_cells = np.zeros((NUM_CELLS, NUM_CELLS, *CELL_SIZE), dtype=np.uint8)
     for i in range(NUM_CELLS):
         for j in range(NUM_CELLS):
-            sudoku_cell = # YOUR CODE
+            sudoku_cell = binarized_image[0+i*CELL_SIZE[0]:(i+1)*CELL_SIZE[0], 0+j*CELL_SIZE[0]:(j+1)*CELL_SIZE[0]]
             sudoku_cell = crop_image(sudoku_cell, crop_factor=crop_factor)
-            
             sudoku_cells[i, j] = resize_image(sudoku_cell, CELL_SIZE)
 
     # END YOUR CODE
@@ -122,6 +126,9 @@ def is_empty(sudoku_cell, **kwargs):
         cell_is_empty (bool): True or False depends on whether the Sudoku cell is empty or not
     """
     # BEGIN YOUR CODE
+
+    white_pix_count = np.count_nonzero(sudoku_cell)
+    cell_is_empty = white_pix_count > 4050
     
     # END YOUR CODE
     
@@ -138,15 +145,15 @@ def get_digit_correlations(sudoku_cell, templates_dict):
     """
     correlations = np.zeros(9)
     
-    if is_empty(sudoku_cell, # YOUR CODE):
+    if is_empty(sudoku_cell):# YOUR CODE):
         return correlations
     
     # BEGIN YOUR CODE
 
     for digit, templates in templates_dict.items():
         # calculate the correlation score between the sudoku_cell and a digit
-        correlations[digit - 1] = # YOUR CODE
-    
+        correlations[digit - 1] = match_template(sudoku_cell, templates[0]) # YOUR CODE
+
     # END YOUR CODE
 
     return correlations
@@ -172,12 +179,15 @@ def recognize_digits(sudoku_cells, templates_dict, threshold=0.5):
         sudoku_matrix (np.array): a matrix of shape [N, N] with recognized digits of the Sudoku grid
     """
     # BEGIN YOUR CODE
-    
     sudoku_matrix = np.zeros(sudoku_cells.shape[:2], dtype=np.uint8)
     for i in range(sudoku_cells.shape[0]):
         for j in range(sudoku_cells.shape[1]):
-            sudoku_matrix[i, j] = # YOUR CODE  # 0 in case of empty cell
-
+            if is_empty(sudoku_cells[i][j]):
+                sudoku_matrix[i, j] = 0
+            else:
+                correlations = get_digit_correlations(sudoku_cells[i][j], templates_dict)
+                correlations = correlations.tolist()
+                sudoku_matrix[i, j] = correlations.index(max(correlations)) + 1
     # END YOUR CODE
     
     return sudoku_matrix
@@ -201,7 +211,7 @@ def show_recognized_digits(image_paths, pipeline,
         axis.set_title(os.path.split(image_path)[1])
         
         sudoku_image = read_image(image_path=image_path)
-        normalized_image = normalize_image(sudoku_image, pipeline)
+        normalized_image = frontalize_image(sudoku_image, pipeline)
         sudoku_cells = get_sudoku_cells(normalized_image, crop_factor=crop_factor, binarization_kwargs=binarization_kwargs)
 
         templates_dict = load_templates()

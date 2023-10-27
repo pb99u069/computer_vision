@@ -2,7 +2,8 @@ import os
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
-from rdp import rdp
+from skimage.transform import rescale
+from skimage import img_as_ubyte
 
 from tqdm.notebook import tqdm
 
@@ -81,11 +82,11 @@ def order_corners(corners):
     """
     # BEGIN YOUR CODE
 
-    corners = corners[corners[:, 0].argsort()]
+    corners = corners[corners[:, 1].argsort()]
     tc = corners[0:2]
     bc = corners[2:4]
-    tc = tc[tc[:, 1].argsort()]
-    bc = bc[bc[:, 1].argsort()]
+    tc = tc[tc[:, 0].argsort()]
+    bc = bc[bc[:, 0].argsort()]
 
     top_left = tc[0]
     top_right = tc[1]
@@ -110,10 +111,8 @@ def find_corners(contour, accuracy=0.101):
     """
 
     # maybe this:  https://www.scaler.com/topics/contour-analysis-opencv/    
-    print(len(contour))
     accuracy = 0.01*cv2.arcLength(contour, True)
     corners = cv2.approxPolyDP(contour, accuracy, True)
-    print(corners.shape)
     corners = np.array([corners[0][0],
                         corners[1][0],
                         corners[2][0],
@@ -141,7 +140,8 @@ def rescale_image(image, scale=0.5):
     """
     # BEGIN YOUR CODE
 
-    rescaled_image = None # YOUR CODE
+    rescaled_image = rescale(image, scale, anti_aliasing=False)
+    rescaled_image = img_as_ubyte(rescaled_image)
     
     # END YOUR CODE
     
@@ -175,7 +175,7 @@ def distance(point1, point2):
     """
     # BEGIN YOUR CODE
 
-    distance = None # YOUR CODE
+    distance = np.linalg.norm(point1 - point2)
     
     # END YOUR CODE
     
@@ -195,17 +195,21 @@ def warp_image(image, ordered_corners):
 
     # BEGIN YOUR CODE
 
-    # the side length of the Sudoku grid based on distances between corners
-    side = None # YOUR CODE
+    ordered_corners = np.array([top_left, top_right, bottom_right, bottom_left], dtype='float32')     # the side length of the Sudoku grid based on distances between corners
+
+    side = max([ distance(bottom_right, top_right), 
+                 distance(top_left, bottom_left),
+                 distance(bottom_right, bottom_left),   
+                 distance(top_left, top_right) ])
 
     # what are the 4 target (destination) points?
-    destination_points = None # YOUR CODE
+    destination_points = np.array([[0, 0], [side, 0], [side, side], [0, side]], dtype='float32')
 
     # perspective transformation matrix
-    transform_matrix = None # YOUR CODE
+    transform_matrix = cv2.getPerspectiveTransform(ordered_corners, destination_points)
 
     # image warped using the found perspective transformation matrix
-    warped_image = None # YOUR CODE
+    warped_image = cv2.warpPerspective(image, transform_matrix, (int(side), int(side)))
     
     # END YOUR CODE
 
@@ -224,9 +228,9 @@ def frontalize_image(sudoku_image, pipeline):
     """
     # BEGIN YOUR CODE
 
-    image, ordered_corners = None # YOUR CODE
+    image, ordered_corners = pipeline(sudoku_image, plot=True)
     
-    frontalized_image = None # YOUR CODE
+    frontalized_image = warp_image(image, ordered_corners)
     
     # END YOUR CODE
 
