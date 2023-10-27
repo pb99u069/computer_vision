@@ -3,7 +3,9 @@ import numpy as np
 import cv2
 import matplotlib.pyplot as plt
 from skimage.transform import rescale
+from skimage.filters import gaussian
 from skimage import img_as_ubyte
+
 
 from tqdm.notebook import tqdm
 
@@ -158,7 +160,13 @@ def gaussian_blur(image, sigma):
     """
     # BEGIN YOUR CODE
 
-    blurred_image = None # YOUR CODE
+    print(image)
+    # print(image[0][0].type)
+    blurred_image = gaussian(image, sigma, preserve_range=True) # YOUR CODE
+    blurred_image = (np.rint(blurred_image)).astype(np.uint8)
+    # blurred_image = img_as_ubyte(blurred_image)
+    print(blurred_image)
+    # blurred_image = image # YOUR CODE
     
     # END YOUR CODE
     

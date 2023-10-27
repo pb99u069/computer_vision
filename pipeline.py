@@ -14,7 +14,8 @@ from frontalization import find_corners
 def get_test_pipeline():
     # BEGIN YOUR CODE
 
-    pipeline = Pipeline(functions=[rescale_image, find_edges, highlight_edges, find_contours, get_max_contour, find_corners])
+    pipeline = Pipeline(functions=[gaussian_blur, rescale_image, find_edges, highlight_edges, find_contours, get_max_contour, find_corners],
+                        parameters={"gaussian_blur": {"sigma": 1.0}})
     # END YOUR CODE
     
     return pipeline
